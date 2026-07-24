@@ -7,6 +7,17 @@ interface Props {
   suggestions: TailoringSuggestion[];
 }
 
+const actionButtonStyle: React.CSSProperties = {
+  background: "var(--color-heading)",
+  color: "#fff",
+  fontFamily: "var(--font-heading)",
+  fontSize: 13,
+  border: "none",
+  borderRadius: 6,
+  padding: "6px 14px",
+  cursor: "pointer",
+};
+
 export default function SuggestionsReview({ suggestions }: Props) {
   const [reviewable, setReviewable] = useState<ReviewableSuggestion[]>(
     suggestions.map((s) => ({
@@ -15,6 +26,12 @@ export default function SuggestionsReview({ suggestions }: Props) {
       editedText: s.proposed,
     }))
   );
+
+  // Tracks which suggestion is currently being actively edited (textarea
+  // open), separate from `status`, since "editing" is a temporary UI mode,
+  // not a final decision like accepted/rejected/edited are.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftText, setDraftText] = useState("");
 
   function accept(id: string) {
     setReviewable((prev) =>
@@ -28,12 +45,18 @@ export default function SuggestionsReview({ suggestions }: Props) {
     );
   }
 
-  function updateEditedText(id: string, text: string) {
+  function startEditing(s: ReviewableSuggestion) {
+    setEditingId(s.id);
+    setDraftText(s.editedText);
+  }
+
+  function submitEdit(id: string) {
     setReviewable((prev) =>
       prev.map((s) =>
-        s.id === id ? { ...s, editedText: text, status: "edited" } : s
+        s.id === id ? { ...s, editedText: draftText, status: "edited" } : s
       )
     );
+    setEditingId(null);
   }
 
   function resetToPending(id: string) {
@@ -44,6 +67,7 @@ export default function SuggestionsReview({ suggestions }: Props) {
           : s
       )
     );
+    if (editingId === id) setEditingId(null);
   }
 
   const acceptedCount = reviewable.filter(
@@ -52,50 +76,97 @@ export default function SuggestionsReview({ suggestions }: Props) {
 
   return (
     <div>
-      <p>
+      <p style={{ color: "var(--color-subtext)" }}>
         {acceptedCount} of {reviewable.length} suggestions accepted
       </p>
 
-      {reviewable.map((s) => (
-        <div key={s.id} data-status={s.status}>
-          <p>
-            <strong>Section:</strong> {s.section}
-          </p>
-          <p>
-            <strong>Original:</strong> {s.original}
-          </p>
+      {reviewable.map((s) => {
+        const isEditing = editingId === s.id;
 
-          {s.status === "edited" ? (
-            <textarea
-              value={s.editedText}
-              onChange={(e) => updateEditedText(s.id, e.target.value)}
-            />
-          ) : (
-            <p>
-              <strong>Proposed:</strong> {s.proposed}
+        return (
+          <div
+            key={s.id}
+            data-status={s.status}
+            style={{
+              border: "1.5px solid var(--color-border)",
+              borderRadius: 12,
+              padding: 20,
+              marginBottom: 16,
+              background: "rgba(255,255,255,0.4)",
+            }}
+          >
+            <p style={{ color: "var(--color-heading)" }}>
+              <strong>Section:</strong> {s.section}
             </p>
-          )}
+            <p style={{ color: "var(--color-subtext)" }}>
+              <strong>Original:</strong> {s.original}
+            </p>
 
-          <p>
-            <em>{s.reason}</em>
-          </p>
+            {isEditing ? (
+              <textarea
+                value={draftText}
+                onChange={(e) => setDraftText(e.target.value)}
+                rows={4}
+                style={{
+                  width: "100%",
+                  border: "1.5px solid var(--color-border)",
+                  borderRadius: 12,
+                  padding: 12,
+                  marginTop: 8,
+                  marginBottom: 8,
+                  background: "rgba(255,255,255,0.6)",
+                  color: "var(--color-subtext)",
+                  fontFamily: "var(--font-body)",
+                  resize: "vertical",
+                }}
+              />
+            ) : (
+              <p style={{ color: "var(--color-subtext)" }}>
+                <strong>Proposed:</strong> {s.editedText}
+              </p>
+            )}
 
-          <p>Status: {s.status}</p>
+            <p style={{ color: "var(--color-subtext)", fontStyle: "italic" }}>
+              {s.reason}
+            </p>
 
-          <button onClick={() => accept(s.id)} disabled={s.status === "accepted"}>
-            Accept
-          </button>
-          <button onClick={() => reject(s.id)} disabled={s.status === "rejected"}>
-            Reject
-          </button>
-          <button onClick={() => updateEditedText(s.id, s.proposed)}>
-            Edit
-          </button>
-          {s.status !== "pending" && (
-            <button onClick={() => resetToPending(s.id)}>Reset</button>
-          )}
-        </div>
-      ))}
+            <p style={{ color: "var(--color-subtext)" }}>Status: {s.status}</p>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              {isEditing ? (
+                <button
+                  onClick={() => submitEdit(s.id)}
+                  style={actionButtonStyle}
+                >
+                  Submit
+                </button>
+              ) : s.status === "pending" ? (
+                <>
+                  <button onClick={() => accept(s.id)} style={actionButtonStyle}>
+                    Accept
+                  </button>
+                  <button onClick={() => reject(s.id)} style={actionButtonStyle}>
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => startEditing(s)}
+                    style={actionButtonStyle}
+                  >
+                    Edit
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => resetToPending(s.id)}
+                  style={actionButtonStyle}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
