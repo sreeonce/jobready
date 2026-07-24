@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TailoringSuggestion, ReviewableSuggestion } from "@/lib/types";
 
 interface Props {
   suggestions: TailoringSuggestion[];
+  onChange?: (suggestions: ReviewableSuggestion[]) => void;
 }
 
 const actionButtonStyle: React.CSSProperties = {
@@ -18,7 +19,7 @@ const actionButtonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-export default function SuggestionsReview({ suggestions }: Props) {
+export default function SuggestionsReview({ suggestions, onChange }: Props) {
   const [reviewable, setReviewable] = useState<ReviewableSuggestion[]>(
     suggestions.map((s) => ({
       ...s,
@@ -26,6 +27,13 @@ export default function SuggestionsReview({ suggestions }: Props) {
       editedText: s.proposed,
     }))
   );
+
+  // Report the current state up to the parent any time it changes, so
+  // the parent (which owns export) always has the latest accept/reject/edit
+  // decisions without needing to duplicate this state.
+  useEffect(() => {
+    onChange?.(reviewable);
+  }, [reviewable, onChange]);
 
   // Tracks which suggestion is currently being actively edited (textarea
   // open), separate from `status`, since "editing" is a temporary UI mode,

@@ -3,7 +3,7 @@
 import AnalysisResult from "@/components/AnalysisResult";
 import { useState } from "react";
 import SuggestionsReview from "@/components/SuggestionsReview";
-import { TailoringSuggestion } from "@/lib/types";
+import { TailoringSuggestion, ReviewableSuggestion } from "@/lib/types";
 
 export default function Home() {
   const [resume, setResume] = useState<File | null>(null);
@@ -11,7 +11,7 @@ export default function Home() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const [finalSuggestions, setFinalSuggestions] = useState<ReviewableSuggestion[] | null>(null);
   const [suggestions, setSuggestions] = useState<TailoringSuggestion[] | null>(null);
   const [tailorLoading, setTailorLoading] = useState(false);
   const [tailorError, setTailorError] = useState<string | null>(null);
@@ -202,7 +202,7 @@ export default function Home() {
           if (hasNoRealOverlap && !forceShowButton) {
             return (
               <div style={{ marginTop: 16 }}>
-                <p style={{ color: "var(--color-subtext)" }}>
+                <p style={{ color: "var(--color-error)" }}>
                   This resume and job description don't have enough overlap
                   for tailoring suggestions to be meaningful. JobReady only
                   rewords real experience, it won't invent a fit that isn't
@@ -211,15 +211,25 @@ export default function Home() {
                 <button
                   onClick={() => setForceShowButton(true)}
                   style={{
-                    background: "transparent",
-                    color: "var(--color-heading)",
-                    border: "1.5px solid var(--color-border)",
+                    background: "var(--color-heading)",
+                    color: "#fff",
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 16,
+                    border: "none",
                     borderRadius: 8,
-                    padding: "10px 20px",
+                    padding: "14px 32px",
                     cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
                   }}
                 >
-                  I still want to see suggestions
+                  I would still like to see suggestions
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff">
+                    <path d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5z" />
+                    <path d="M19 15l0.6 2.4L22 18l-2.4 0.6L19 21l-0.6-2.4L16 18l2.4-0.6z" />
+                    <path d="M5 15l0.5 1.5L7 17l-1.5 0.5L5 19l-0.5-1.5L3 17l1.5-0.5z" />
+                  </svg>
                 </button>
               </div>
             );
@@ -253,7 +263,9 @@ export default function Home() {
           {tailorError}
         </p>
       )}
-      {suggestions && <SuggestionsReview suggestions={suggestions} />}
+      {suggestions && (
+        <SuggestionsReview suggestions={suggestions} onChange={setFinalSuggestions} />
+      )}
     </main>
   );
 }
