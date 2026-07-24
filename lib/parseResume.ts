@@ -23,10 +23,11 @@ export async function parseResumeFile(
       const result = await parser.getText();
       return result.text.trim();
     } catch (err) {
-      throw new Error(
-        "This file doesn't look like a valid PDF. Try re-saving or re-exporting it, or upload a DOCX instead."
-      );
-    }
+  console.error("PDF parsing error:", err);
+  throw new Error(
+    "This file doesn't look like a valid PDF. Try re-saving or re-exporting it, or upload a DOCX instead."
+  );
+}
   }
 
   if (
