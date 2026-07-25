@@ -17,18 +17,24 @@ export async function parseResumeFile(
   mimeType: string
 ): Promise<string> {
   if (mimeType === "application/pdf") {
-    const { PDFParse } = require("pdf-parse");
-    try {
-      const parser = new PDFParse({ data: buffer });
-      const result = await parser.getText();
-      return result.text.trim();
-    } catch (err) {
-  console.error("PDF parsing error:", err);
-  throw new Error(
-    "This file doesn't look like a valid PDF. Try re-saving or re-exporting it, or upload a DOCX instead."
-  );
-}
+  console.log("Attempting to require pdf-parse...");
+  const { PDFParse } = require("pdf-parse");
+  console.log("pdf-parse required successfully, PDFParse type:", typeof PDFParse);
+  try {
+    const parser = new PDFParse({ data: buffer });
+    console.log("Parser instance created, calling getText...");
+    const result = await parser.getText();
+    console.log("getText succeeded, text length:", result.text?.length);
+    return result.text.trim();
+  } catch (err: any) {
+    console.error("PDF parsing error - name:", err?.name);
+    console.error("PDF parsing error - message:", err?.message);
+    console.error("PDF parsing error - stack:", err?.stack);
+    throw new Error(
+      "This file doesn't look like a valid PDF. Try re-saving or re-exporting it, or upload a DOCX instead."
+    );
   }
+}
 
   if (
     mimeType ===
