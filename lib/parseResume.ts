@@ -1,40 +1,23 @@
 import mammoth from "mammoth";
-import { createRequire } from "module";
-import DOMMatrixPolyfill from "dommatrix";
-
-const require = createRequire(import.meta.url);
-
-// pdf-parse's underlying PDF engine expects browser APIs like DOMMatrix,
-// which don't exist in Vercel's serverless Node.js runtime (only in
-// browsers and in local dev). This polyfill fills that gap so PDF parsing
-// works the same in production as it does locally.
-if (typeof globalThis.DOMMatrix === "undefined") {
-  (globalThis as any).DOMMatrix = DOMMatrixPolyfill;
-}
+import { extractText, getDocumentProxy } from "unpdf";
 
 export async function parseResumeFile(
   buffer: Buffer,
   mimeType: string
 ): Promise<string> {
   if (mimeType === "application/pdf") {
-  console.log("Attempting to require pdf-parse...");
-  const { PDFParse } = require("pdf-parse");
-  console.log("pdf-parse required successfully, PDFParse type:", typeof PDFParse);
-  try {
-    const parser = new PDFParse({ data: buffer });
-    console.log("Parser instance created, calling getText...");
-    const result = await parser.getText();
-    console.log("getText succeeded, text length:", result.text?.length);
-    return result.text.trim();
-  } catch (err: any) {
-    console.error("PDF parsing error - name:", err?.name);
-    console.error("PDF parsing error - message:", err?.message);
-    console.error("PDF parsing error - stack:", err?.stack);
-    throw new Error(
-      "This file doesn't look like a valid PDF. Try re-saving or re-exporting it, or upload a DOCX instead."
-    );
+    try {
+      const uint8Array = new Uint8Array(buffer);
+      const pdf = await getDocumentProxy(uint8Array);
+      const { text } = await extractText(pdf, { mergePages: true });
+      return text.trim();
+    } catch (err) {
+      console.error("PDF parsing error:", err);
+      throw new Error(
+        "This file doesn't look like a valid PDF. Try re-saving or re-exporting it, or upload a DOCX instead."
+      );
+    }
   }
-}
 
   if (
     mimeType ===
